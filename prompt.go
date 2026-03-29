@@ -37,7 +37,7 @@ func ParseInput(input string) (Prompt, error) {
 	}
 	for _, word := range wordSlice {
 		if slices.Contains(ShellOperator, word) {
-			prompt.instructionDequeue = append(prompt.instructionDequeue, in)
+			prompt.instructionDequeue = append(prompt.instructionDequeue, currentInstruction)
 			currentInstruction = Instruction{}
 			opDequeue.operator = append(opDequeue.operator, word)
 		} else {
