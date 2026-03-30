@@ -73,6 +73,9 @@ func buildToken(parts []string) []Token {
 			current.instruction = append(current.instruction, word)
 		}
 	}
+	if len(current.instruction) > 0 {
+		tokens = append(tokens, current)
+	}
 	return tokens
 }
 func ParseInput(input string) (*Node, error) {
