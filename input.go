@@ -7,14 +7,17 @@ import (
 	"strings"
 )
 
-var ShellOperator = []string{"|", "<", ">"}
+var shellOperators = []string{"|", "<", ">"}
+var redirectionOperators = []string{"<", ">"}
+var pipeOperators = []string{"|"}
 
-type Instruction struct {
-	args []string
+type Node struct {
+	left  *Node
+	args  []string
+	right *Node
 }
-type Prompt struct {
-	operators    []string
-	instructions []Instruction
+type Token struct {
+	instruction []string
 }
 
 func GetInput(scanner *bufio.Scanner) string {
@@ -22,25 +25,62 @@ func GetInput(scanner *bufio.Scanner) string {
 	text := scanner.Text()
 	return text
 }
-func ParseInput(input string) (Prompt, error) {
-	parts := strings.Fields(input)
-	currentInstruction := Instruction{}
-	prompt := Prompt{}
-	if slices.Contains(ShellOperator, parts[0]) {
-		return Prompt{}, fmt.Errorf("my_shell: syntax error near unexpected token `%s`", parts[0])
+func checkPrecedence(operator string) int {
+	if slices.Contains(redirectionOperators, operator) {
+		return 2
+	} else if slices.Contains(pipeOperators, operator) {
+		return 1
 	}
-	for _, word := range parts {
-		if slices.Contains(ShellOperator, word) {
-			prompt.instructions = append(prompt.instructions, currentInstruction)
-			currentInstruction = Instruction{}
-			prompt.operators = append(prompt.operators, word)
-		} else {
-			currentInstruction.args = append(currentInstruction.args, word)
+	return 0
+}
+func checkOperator(tokens []Token) int {
+	var index int
+	var prevPrecedence int
+	for i, operator := range tokens {
+		if slices.Contains(shellOperators, operator.instruction[0]) {
+			currPrecedence := checkPrecedence(operator.instruction[0])
+			if currPrecedence >= prevPrecedence {
+				index = i
+				prevPrecedence = currPrecedence
+			}
 		}
 	}
-	if len(currentInstruction.args) > 0 {
+	return index
+}
 
-		prompt.instructions = append(prompt.instructions, currentInstruction)
+func buildTree(tokens []Token) *Node {
+	if len(tokens) == 0 {
+		return nil
 	}
-	return prompt, nil
+	index := checkOperator(tokens)
+	if !slices.Contains(shellOperators, tokens[index].instruction[0]) {
+		return &Node{args: tokens[index].instruction}
+	}
+	root := &Node{args: tokens[index].instruction}
+	root.left = buildTree(tokens[:index])
+	root.right = buildTree(tokens[index+1:])
+	return root
+}
+func buildToken(parts []string) []Token {
+	var tokens []Token
+	current := Token{}
+	for _, word := range parts {
+		if slices.Contains(shellOperators, word) {
+			tokens = append(tokens, current)
+			tokens = append(tokens, Token{instruction: []string{word}})
+			current = Token{}
+		} else {
+			current.instruction = append(current.instruction, word)
+		}
+	}
+	return tokens
+}
+func ParseInput(input string) (*Node, error) {
+	parts := strings.Fields(input)
+	if slices.Contains(shellOperators, parts[0]) {
+		return &Node{}, fmt.Errorf("my_shell: syntax error near unexpected token `%s`", parts[0])
+	}
+	tokens := buildToken(parts)
+	promptTree := buildTree(tokens)
+	return promptTree, nil
 }
