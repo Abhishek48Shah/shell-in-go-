@@ -9,7 +9,6 @@ import (
 
 var shellOperators = []string{"|", "<", ">"}
 var redirectionOperators = []string{"<", ">"}
-var pipeOperators = []string{"|"}
 
 type Node struct {
 	left  *Node
@@ -26,20 +25,22 @@ func GetInput(scanner *bufio.Scanner) string {
 	return text
 }
 func checkPrecedence(operator string) int {
-	if slices.Contains(redirectionOperators, operator) {
-		return 2
-	} else if slices.Contains(pipeOperators, operator) {
+	if strings.Compare(operator, "&&") == 0 || strings.Compare(operator, "||") == 0 {
 		return 1
+	} else if strings.Contains(operator, "|") {
+		return 2
+	} else if slices.Contains(redirectionOperators, operator) {
+		return 3
 	}
 	return 0
 }
 func checkOperator(tokens []Token) int {
-	var index int
-	var prevPrecedence int
+	index := 0
+	prevPrecedence := 999
 	for i, operator := range tokens {
 		if slices.Contains(shellOperators, operator.instruction[0]) {
 			currPrecedence := checkPrecedence(operator.instruction[0])
-			if currPrecedence >= prevPrecedence {
+			if currPrecedence <= prevPrecedence {
 				index = i
 				prevPrecedence = currPrecedence
 			}
