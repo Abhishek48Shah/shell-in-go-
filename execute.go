@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -34,6 +33,7 @@ func handleRedirectionalOut(node *Node, in io.Reader) {
 	file, err := os.Create(node.right.args[0])
 	if err != nil {
 		os.Stderr.WriteString(err.Error() + "\n")
+		return
 	}
 	defer file.Close()
 	ProcessCommand(node.left, in, file)
@@ -45,6 +45,7 @@ func handleRedirectionalIn(node *Node, out io.Writer) {
 	file, err := os.Open(node.right.args[0])
 	if err != nil {
 		os.Stderr.WriteString(err.Error() + "\n")
+		return
 	}
 	defer file.Close()
 	ProcessCommand(node.left, file, out)
@@ -56,6 +57,7 @@ func handleRedirectionalAppend(node *Node, in io.Reader) {
 	file, err := os.OpenFile(node.right.args[0], os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		os.Stderr.WriteString(err.Error() + "\n")
+		return
 	}
 	defer file.Close()
 	ProcessCommand(node.left, in, file)
@@ -68,11 +70,22 @@ func handleCommandChanning(node *Node, in io.Reader, out io.Writer) {
 	ProcessCommand(node.right, in, out)
 }
 func handleChangeDir(node *Node) {
+	var targetDir string
+	var err error
 	if node == nil {
 		return
 	}
 	sliceArr := node.args
-	err := os.Chdir(strings.Trim(sliceArr[1], "[]"))
+	if len(sliceArr) == 1 {
+		targetDir, err = os.UserHomeDir()
+		targetDir += "/buffer/index"
+		if err != nil {
+			os.Stderr.WriteString(err.Error() + "\n")
+		}
+	} else {
+		targetDir = strings.Trim(sliceArr[1], "[]")
+	}
+	err = os.Chdir(targetDir)
 	if err != nil {
 		os.Stderr.WriteString(err.Error() + "\n")
 	}
@@ -81,7 +94,6 @@ func ProcessCommand(node *Node, in io.Reader, out io.Writer) {
 	if node == nil {
 		return
 	}
-	fmt.Println(node.args[0])
 	switch node.args[0] {
 	case "|":
 		handlePipe(node, in, out)
