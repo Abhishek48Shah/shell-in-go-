@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-var shellOperators = []string{"|", "<", ">"}
-var redirectionOperators = []string{"<", ">"}
+var shellOperators = []string{"|", "<", ">", ">>", "&&"}
+var redirectionOperators = []string{"<", ">", ">>"}
 
 type Node struct {
 	left  *Node
@@ -66,6 +66,11 @@ func buildToken(parts []string) []Token {
 	var tokens []Token
 	current := Token{}
 	for _, word := range parts {
+		if strings.Contains(word, "\"") {
+			word = strings.Trim(word, "\"")
+		} else if strings.Contains(word, "'") {
+			word = strings.Trim(word, "'")
+		}
 		if slices.Contains(shellOperators, word) {
 			tokens = append(tokens, current)
 			tokens = append(tokens, Token{instruction: []string{word}})

@@ -4,9 +4,17 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"os/exec"
 )
 
+//	func printNode(node *Node) {
+//		if node == nil {
+//			return
+//		}
+//		printNode(node.left)
+//		printNode(node.right)
+//		arr := node.args
+//		fmt.Println(strings.Trim(arr[1], "[]"))
+//	}
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
@@ -19,16 +27,6 @@ func main() {
 		if err != nil {
 			fmt.Println(err)
 		}
-		if len(parsedInput.operators) > 0 {
-			HandleOperator(parsedInput)
-		} else {
-			cmd := exec.Command(parsedInput.instructions[0].args[0], parsedInput.instructions[0].args[1:]...)
-			cmd.Stderr = os.Stderr
-			cmd.Stdin = os.Stdin
-			cmd.Stdout = os.Stdout
-			if err := cmd.Run(); err != nil {
-				fmt.Println(err)
-			}
-		}
+		ProcessCommand(parsedInput, os.Stdin, os.Stdout)
 	}
 }
